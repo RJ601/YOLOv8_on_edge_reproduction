@@ -1,6 +1,6 @@
 # Reproducing "Achieving low-latency edge computing: YOLOv8 for real-time passenger monitoring"
 
-A reproduction attempt of the paper's **Experiment 1**: YOLOv8-nano trained on 185 ferry-terminal images to detect 5 classes (bus, car, ferryboat, person, truck). The paper does not state the optimizer, the learning rate or the confidence threshold behind its person-precision figure, so this project tests each unknown as its own experiment. Every run is trained, scored on the test split, timed, and logged to one CSV. **Result: the paper's numbers were not reproduced** (see Results).
+A reproduction attempt of the paper's **Experiment 1**: YOLOv8-nano trained on 185 ferry-terminal images to detect 5 classes (bus, car, ferryboat, person, truck). Every run is trained, scored on the test split, timed, and logged to one CSV. 
 
 ## Results
 

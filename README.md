@@ -86,7 +86,7 @@ pip install -r requirements.txt
 
 ## Dataset
 
-The dataset is **not in this repository**. It is Experiment 1 of the paper (185 images, 80/10/10 split) and was provided privately by the paper's authors, **Roberto de Pádua Carvalho Reis** and **Omar Andres Carmona Cortes**. It is already in YOLO format. Place it, with the authors' `data.yaml`, like this:
+The dataset is **not in this repository**. It is Experiment 1 of the paper (185 images, 80/10/10 split) and was provided privately by the paper's authors, **Roberto de Pádua Carvalho Reis** and **Omar Andres Carmona Cortes**. It is already in YOLO format:
 
 ```
 yolo_dataset/
@@ -95,8 +95,6 @@ yolo_dataset/
 ├── val/    images/  labels/
 └── test/   images/  labels/
 ```
-
-Class ids: bus=0, car=1, ferryboat=2, person=3, truck=4.
 
 ## Evaluation metrics
 

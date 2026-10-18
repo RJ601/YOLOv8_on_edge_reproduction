@@ -2,17 +2,16 @@
 main.py: runs the baseline and every experiment, then plots the results.
 
 INPUT
-    - The raw dataset, handled by DATA().build_dataset() in data.py (needs split() implemented)
+    - The raw dataset
     - BASE        : default training settings (the paper's Experiment 2)
     - EXPERIMENTS : one entry per run, listing only the settings that differ from BASE
 
 PROCESS
-    1. build_dataset() writes yolo_dataset/ (images, labels, data.yaml) once.
-    2. For each entry in EXPERIMENTS (in order):
+    1. For each entry in EXPERIMENTS (in order):
          config = BASE merged with that entry's overrides
          Model(name, config) -> train() -> evaluate() -> log()
        Runs are sequential, so total time is the sum of all trainings.
-    3. After the loop, experiment_log.csv is read back and one bar chart is
+    2. After the loop, experiment_log.csv is read back and one bar chart is
        drawn per metric, with one bar per experiment.
 
 OUTPUT
@@ -34,8 +33,7 @@ NOTES
     - If an experiment has no person boxes in the test set, precision_person is empty
       and that bar is skipped in its chart.
 """
-
-from data import DATA                
+            
 from model import Model               
 import pandas as pd                  
 import matplotlib.pyplot as plt      
@@ -45,11 +43,12 @@ import matplotlib.pyplot as plt
 BASE = {
     "model": "yolov8n.pt",   # nano variant (Sect. 4.4); .pt = COCO-pretrained = transfer learning
     "imgsz": 640,            # paper resizes everything to 640x640
-    "epochs": 50,            # paper: 50 epochs for experiment 2
+    "epochs": 200,            # paper: 200 epochs for experiment 1
     "patience": 10,          # early stopping: stop if no improvement for 10 epochs (paper: 10)
-    "batch": 32,             # paper: 32 for experiment 2
+    "batch": 16,             # paper: 16 for experiment 1
     "optimizer": "auto",     # unspecified in paper. With "auto" and <10,000 iterations (our case,
-                             # ~2,800), Ultralytics picks AdamW with lr ~0.00111 and IGNORES lr0
+                             # ~2,000: 148 images / batch 16 = ~10 per epoch x 200 epochs), Ultralytics
+                             # picks AdamW with lr ~0.00111 and IGNORES lr0
     "lr0": 0.01,             # only takes effect when optimizer is set explicitly (e.g. "SGD")
     "freeze": 0,             # 0 = fine-tune all layers; N = freeze first N layers
     "seed": 0,               # fixed seed so runs are comparable
@@ -67,16 +66,12 @@ EXPERIMENTS = {
     # Transfer learning depth: freeze the backbone (layers 0-9)
     "freeze10": {"freeze": 10},
 
-    # Longer training; patience is raised with it, so this changes two keys together
-    "epochs100": {"epochs": 100, "patience": 20},
+    # Longer training; patience is raised with it, so this changes two keys together - for exp 2 from paper
+    # "epochs100": {"epochs": 100, "patience": 20},
 
     # Training from scratch, to check how much pretraining matters
     "scratch": {"model": "yolov8n.yaml"},   # .yaml = architecture only, random weights
 }
-
-# Build yolo_dataset/ and data.yaml once, before any training.
-# This calls your split(), so it can't run until split() is implemented.
-DATA().build_dataset()
 
 # items() gives (experiment name, overrides dict) for each entry, so the loop
 # runs once for "baseline", once for "sgd", and so on.
@@ -96,6 +91,7 @@ for name, overrides in EXPERIMENTS.items():
 
     model.train()      # trains and saves the weights to runs/<name>/weights/best.pt
     model.evaluate()   # scores best.pt on the test split and stores the metrics
+    model.evaluate_onnx()    # exports to ONNX automatically, then times it
     model.log()        # appends this run's settings and metrics as one row in experiment_log.csv
 
 # Everything from here on runs AFTER the loop, once all experiments are logged.
@@ -115,7 +111,9 @@ for metric in METRICS:
     plt.figure(figsize=(8, 5))                # start a new, empty chart (8 x 5 inches)
     plt.bar(log["experiment"], log[metric])   # x = experiment names, bar height = this metric's value
     plt.title(metric)                         # chart title = metric name, e.g. "map50"
-    plt.ylim(0, 1)                            # all metrics are fractions from 0 to 1, so every chart shares the same scale
+
+    if not metric.startswith("latency"):
+        plt.ylim(0, 1)                            # all metrics are fractions from 0 to 1 except latency, so every chart shares the same scale
     plt.xticks(rotation=45, ha="right")       # tilt the experiment names so they don't overlap
     plt.tight_layout()                        # shrink margins so the tilted labels aren't cut off
 
